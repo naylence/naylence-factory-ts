@@ -218,6 +218,20 @@ export class ExtensionManager<T = unknown, C = unknown> {
   }
 
   /**
+   * Get all registered factories for a given base type name.
+   *
+   * @param baseTypeName The base type name (e.g., "ConnectorFactory")
+   * @returns A new map of type names to factory information
+   */
+  public static getExtensionsByType<T = unknown, C = unknown>(
+    baseTypeName: string
+  ): Map<string, FactoryInfo<T, C>> {
+    const group = `naylence.${baseTypeName}`;
+    const manager = this.getExtensionManager<T, C>(group, baseTypeName);
+    return manager.getAllFactoryInfo();
+  }
+
+  /**
    * Register a factory globally using the base type as the group.
    * 
    * @param baseTypeName The base type name (e.g., "ConnectorFactory")

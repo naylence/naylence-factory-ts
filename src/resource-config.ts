@@ -386,17 +386,51 @@ export class ResourceConfigValidator {
   private processValue(value: unknown, context: ValidationContext): unknown {
     if (typeof value === 'string') {
       // Process string expressions
-      return ExpressionEvaluator.evaluate(value, context);
+      const evaluated = ExpressionEvaluator.evaluate(value, context);
+      if (typeof evaluated === 'string') {
+        return this.coerceEvaluatedScalar(evaluated);
+      }
+      return evaluated;
     } else if (Array.isArray(value)) {
       // Process array elements
       return value.map(item => this.processValue(item, context));
     } else if (value && typeof value === 'object') {
-      // Process object properties
+      const prototype = Object.getPrototypeOf(value);
+      const isPlainObject = !prototype || prototype === Object.prototype;
+
+      if (!isPlainObject) {
+        return value;
+      }
+
       const processedObj: Record<string, unknown> = {};
       for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
         processedObj[key] = this.processValue(val, context);
       }
       return processedObj;
+    }
+
+    return value;
+  }
+
+  private coerceEvaluatedScalar(value: string): unknown {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return value;
+    }
+
+    const lower = trimmed.toLowerCase();
+    if (lower === 'true') {
+      return true;
+    }
+    if (lower === 'false') {
+      return false;
+    }
+
+    if (/^[+-]?\d+(?:\.\d+)?$/.test(trimmed)) {
+      const numeric = Number(trimmed);
+      if (!Number.isNaN(numeric)) {
+        return numeric;
+      }
     }
 
     return value;

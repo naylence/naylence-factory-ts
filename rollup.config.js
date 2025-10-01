@@ -9,13 +9,15 @@ export default {
       file: 'dist/browser/index.js',
       format: 'umd',
       name: 'NaylenceFactory',
+      sourcemap: true,
       globals: {
         // Add any globals needed for browser builds
       }
     },
     {
       file: 'dist/browser/index.esm.js',
-      format: 'es'
+      format: 'es',
+      sourcemap: true
     }
   ],
   plugins: [
@@ -26,7 +28,11 @@ export default {
     commonjs(),
     typescript({
       tsconfig: './tsconfig.json',
-      declaration: false,
+      compilerOptions: {
+        declaration: false,
+        declarationMap: false,
+        sourceMap: true
+      },
       outDir: 'dist/browser'
     })
   ],

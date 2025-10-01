@@ -252,6 +252,22 @@ describe('ExtensionManager', () => {
       
       expect(manager1).toBe(manager2); // Same instance (singleton pattern)
     });
+
+    it('should return factories registered for a base type', () => {
+      ExtensionManager.registerGlobalFactory('ExtensionsByType', 'TestA', TestFactoryA);
+      ExtensionManager.registerGlobalFactory('ExtensionsByType', 'TestB', TestFactoryB);
+
+      const factories = ExtensionManager.getExtensionsByType<TestResource, TestConfig>('ExtensionsByType');
+
+      expect(factories.size).toBeGreaterThanOrEqual(2);
+      expect(factories.get('TestA')?.constructor).toBe(TestFactoryA);
+      expect(factories.get('TestB')?.constructor).toBe(TestFactoryB);
+
+      // Ensure the returned map is a defensive copy
+      factories.clear();
+      const factoriesAfterClear = ExtensionManager.getExtensionsByType<TestResource, TestConfig>('ExtensionsByType');
+      expect(factoriesAfterClear.size).toBeGreaterThanOrEqual(2);
+    });
   });
 
   describe('factory info', () => {

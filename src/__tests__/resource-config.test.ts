@@ -411,6 +411,61 @@ describe('ResourceConfigValidator', () => {
       const hasArrayErrors = result.errors.some(e => e.path.includes('['));
       expect(hasArrayErrors).toBe(true);
     });
+
+    describe('expression evaluation', () => {
+      const ORIGINAL_ENV = { ...process.env };
+
+      afterEach(() => {
+        process.env = { ...ORIGINAL_ENV };
+      });
+
+      it('evaluates environment expressions and coerces numeric and boolean values', () => {
+        process.env.TEST_PORT = '18080';
+
+        const config = {
+          type: 'DynamicConfig',
+          http: {
+            host: '0.0.0.0',
+            port: '${env:TEST_PORT:8000}',
+            enableLogs: '${env:ENABLE_LOGS:false}',
+            logPath: '${env:LOG_PATH:/tmp/sentinel.log}',
+          },
+        } satisfies Record<string, unknown>;
+
+        const result = validator.validate(config);
+
+        expect(result.valid).toBe(true);
+        expect(result.errors).toHaveLength(0);
+        expect(result.config).toBeDefined();
+        const evaluated = result.config as Record<string, any>;
+
+        expect(evaluated.http.port).toBe(18080);
+        expect(typeof evaluated.http.port).toBe('number');
+        expect(evaluated.http.enableLogs).toBe(false);
+        expect(typeof evaluated.http.enableLogs).toBe('boolean');
+        expect(evaluated.http.logPath).toBe('/tmp/sentinel.log');
+      });
+
+      it('falls back to defaults when variables are missing', () => {
+        delete process.env.MISSING_TEST_PORT;
+
+        const config = {
+          type: 'DynamicConfig',
+          http: {
+            port: '${env:MISSING_TEST_PORT:9000}',
+            secure: '${env:TLS_ENABLED:true}',
+          },
+        } satisfies Record<string, unknown>;
+
+        const result = validator.validate(config);
+
+        expect(result.valid).toBe(true);
+        const evaluated = result.config as Record<string, any>;
+        expect(evaluated.http.port).toBe(9000);
+        expect(typeof evaluated.http.port).toBe('number');
+        expect(evaluated.http.secure).toBe(true);
+      });
+    });
   });
 
   describe('unknown properties handling', () => {
@@ -509,8 +564,8 @@ describe('ResourceConfigValidator', () => {
 
       expect(result.valid).toBe(true);
       expect(result.config!.host).toBe('prod.example.com');
-      expect(result.config!.port).toBe('9090'); // Still string, type coercion would need schema
-      expect(result.config!.enabled).toBe('true');
+    expect(result.config!.port).toBe(9090);
+    expect(result.config!.enabled).toBe(true);
       expect(result.config!.missing).toBe('default_value');
 
       // Clean up
@@ -574,7 +629,7 @@ describe('ResourceConfigValidator', () => {
 
       expect(result.valid).toBe(true);
       expect((result.config! as any).database.host).toBe('prod.db.com');
-      expect((result.config! as any).database.port).toBe('5433');
+    expect((result.config! as any).database.port).toBe(5433);
       expect((result.config! as any).database.credentials.username).toBe('prod_user');
       expect((result.config! as any).database.credentials.password).toBe('secret'); // default used
       expect((result.config! as any).tags[0]).toBe('production');
