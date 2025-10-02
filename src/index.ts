@@ -4,10 +4,10 @@ export {
   type FactoryConstructor,
   type FactoryInfo,
   AbstractResourceFactory,
-} from './factory';
+} from './factory.js';
 
 // Extension management
-export { ExtensionManager } from './extension-manager';
+export { ExtensionManager } from './extension-manager.js';
 
 // Resource configuration and validation
 export {
@@ -19,7 +19,7 @@ export {
   type ValidationError,
   ResourceConfigValidator,
   configValidator,
-} from './resource-config';
+} from './resource-config.js';
 
 // Factory registry - main entry point
 export {
@@ -28,27 +28,45 @@ export {
   createResource,
   createDefaultResource,
   registerFactory,
+  unregisterFactory,
   getFactory,
-} from './factory-registry';
+} from './factory-registry.js';
 
 // Expression evaluation
 export {
   type ExpressionContext,
   ExpressionEvaluationPolicy,
-} from './expression-policy';
+} from './expression-policy.js';
 
 // Expression evaluator
 export {
   ExpressionEvaluator,
   MissingEnvironmentVariableError,
   ExpressionNotAllowedError,
-} from './expression-evaluator';
+} from './expression-evaluator.js';
 
 // Expression utilities  
 export {
   Expressions,
-} from './expressions';
+} from './expressions.js';
+
+// Plugin system
+export {
+  type FamePlugin,
+  type PluginSpecifier,
+  type PluginResolver,
+  type PluginSpec,
+  loadPlugins,
+  loadPluginsFromEnv,
+  loadPluginsFromSpecs,
+} from './plugins.js';
+export { ConventionPluginResolver } from './plugin-resolver.js';
+export {
+  type FactoryManifest,
+  readFactoryManifestIfAny,
+  registerFactoryManifest,
+} from './manifest.js';
 
 // Convenience aliases
-export { ResourceFactoryRegistry as Registry } from './factory-registry';
-export { ExtensionManager as Extensions } from './extension-manager';
+export { ResourceFactoryRegistry as Registry } from './factory-registry.js';
+export { ExtensionManager as Extensions } from './extension-manager.js';

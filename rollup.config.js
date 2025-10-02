@@ -29,6 +29,8 @@ export default {
     typescript({
       tsconfig: './tsconfig.json',
       compilerOptions: {
+        module: 'Node16',
+        moduleResolution: 'node16',
         declaration: false,
         declarationMap: false,
         sourceMap: true

@@ -1,5 +1,5 @@
-import { ExpressionEvaluator } from './expression-evaluator';
-import { ExpressionContext } from './expression-policy';
+import { ExpressionEvaluator } from './expression-evaluator.js';
+import { ExpressionContext } from './expression-policy.js';
 
 /**
  * Base interface for resource configurations.

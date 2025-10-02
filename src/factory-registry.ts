@@ -1,6 +1,6 @@
-import { ResourceFactory } from './factory';
-import { ExtensionManager } from './extension-manager';
-import { ResourceConfig, ResourceConfigValidator, ValidationContext, configValidator } from './resource-config';
+import { ResourceFactory } from './factory.js';
+import { ExtensionManager } from './extension-manager.js';
+import { ResourceConfig, ResourceConfigValidator, ValidationContext, ValidationError, configValidator } from './resource-config.js';
 
 /**
  * Options for resource creation
@@ -55,7 +55,9 @@ export class ResourceFactoryRegistry {
       const validationResult = validator.validate(config, options);
       
       if (!validationResult.valid) {
-        const errorMessages = validationResult.errors.map(e => `${e.path}: ${e.message}`).join('; ');
+        const errorMessages = validationResult.errors
+          .map((error: ValidationError) => `${error.path}: ${error.message}`)
+          .join('; ');
         throw new Error(`Configuration validation failed: ${errorMessages}`);
       }
       
@@ -111,7 +113,9 @@ export class ResourceFactoryRegistry {
       const validationResult = validator.validate(finalConfig, options);
       
       if (!validationResult.valid) {
-        const errorMessages = validationResult.errors.map(e => `${e.path}: ${e.message}`).join('; ');
+        const errorMessages = validationResult.errors
+          .map((error: ValidationError) => `${error.path}: ${error.message}`)
+          .join('; ');
         throw new Error(`Configuration validation failed: ${errorMessages}`);
       }
       
@@ -149,6 +153,20 @@ export class ResourceFactoryRegistry {
       factoryConstructor,
       metadata
     );
+  }
+
+  /**
+   * Unregister factories for a base type. When a resource type name is provided, only that factory
+   * is removed. Otherwise all factories registered under the base type are cleared.
+   *
+   * @param baseTypeName The base factory type name
+   * @param resourceTypeName Optional specific resource type to remove
+   */
+  public static unregisterFactory(
+    baseTypeName: string,
+    resourceTypeName?: string
+  ): void {
+    ExtensionManager.unregisterGlobalFactory(baseTypeName, resourceTypeName);
   }
 
   /**
@@ -256,6 +274,13 @@ export function registerFactory<T = unknown, C = unknown>(
   }
 ): void {
   ResourceFactoryRegistry.registerFactory(baseTypeName, resourceTypeName, factoryConstructor, metadata);
+}
+
+export function unregisterFactory(
+  baseTypeName: string,
+  resourceTypeName?: string
+): void {
+  ResourceFactoryRegistry.unregisterFactory(baseTypeName, resourceTypeName);
 }
 
 export function getFactory<T = unknown, C = unknown>(

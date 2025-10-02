@@ -1,4 +1,4 @@
-import { ExpressionEvaluationPolicy, ExpressionContext } from './expression-policy';
+import { ExpressionEvaluationPolicy, ExpressionContext } from './expression-policy.js';
 
 /**
  * Error thrown when a required environment variable is missing

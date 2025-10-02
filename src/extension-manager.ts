@@ -1,4 +1,4 @@
-import { ResourceFactory, FactoryConstructor, FactoryInfo } from './factory';
+import { ResourceFactory, FactoryConstructor, FactoryInfo } from './factory.js';
 
 /**
  * TypeScript Extension Manager - replaces Python entry points with manual registration.
@@ -44,6 +44,23 @@ export class ExtensionManager<T = unknown, C = unknown> {
     this.registry.set(typeName, factoryInfo);
     
     // Clear instance cache for this type
+    this.instanceCache.delete(typeName);
+  }
+
+  /**
+   * Unregister a factory constructor for a given type name. If no type name is provided,
+   * the entire registry and cache for this manager are cleared.
+   *
+   * @param typeName Optional factory type name to remove
+   */
+  public unregisterFactory(typeName?: string): void {
+    if (typeName === undefined) {
+      this.registry.clear();
+      this.instanceCache.clear();
+      return;
+    }
+
+    this.registry.delete(typeName);
     this.instanceCache.delete(typeName);
   }
 
@@ -263,6 +280,22 @@ export class ExtensionManager<T = unknown, C = unknown> {
     const group = `naylence.${baseTypeName}`;
     const manager = this.getExtensionManager<T, C>(group, baseTypeName);
     manager.registerFactoryInstance(factory);
+  }
+
+  /**
+   * Unregister a factory globally. If no type name is provided, all factories for the base type
+   * are removed.
+   *
+   * @param baseTypeName The base factory type name
+   * @param typeName Optional specific factory type to remove
+   */
+  public static unregisterGlobalFactory<T = unknown, C = unknown>(
+    baseTypeName: string,
+    typeName?: string
+  ): void {
+    const group = `naylence.${baseTypeName}`;
+    const manager = this.getExtensionManager<T, C>(group, baseTypeName);
+    manager.unregisterFactory(typeName);
   }
 
   /**
