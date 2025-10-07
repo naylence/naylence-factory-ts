@@ -27,13 +27,19 @@
   "types": "dist/types/index.d.ts",
   "exports": {
     ".": {
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/esm/index.js",
-      "require": "./dist/cjs/index.js",
-      "types": "./dist/types/index.d.ts"
+      "default": "./dist/esm/index.js"
     },
     "./browser": {
+      "types": "./dist/types/index.d.ts",
       "import": "./dist/browser/index.js",
-      "types": "./dist/types/index.d.ts"
+      "default": "./dist/browser/index.js"
+    },
+    "./*": {
+      "types": "./dist/types/*",
+      "import": "./dist/esm/*",
+      "default": "./dist/esm/*"
     }
   },
   "files": [
@@ -43,11 +49,12 @@
     "NOTICE"
   ],
   "scripts": {
-    "build": "npm run clean && npm run build:types && npm run build:cjs && npm run build:esm && npm run build:browser",
+    "build": "npm run clean && npm run build:types && npm run build:cjs && npm run build:esm && npm run build:browser && npm run fix-source-maps",
     "build:types": "tsc --project tsconfig.json --emitDeclarationOnly --outDir dist/types",
     "build:cjs": "tsc --project tsconfig.cjs.json",
     "build:esm": "tsc --project tsconfig.esm.json",
     "build:browser": "rollup -c rollup.config.js",
+    "fix-source-maps": "node ./scripts/fix-source-maps.js",
     "clean": "rimraf dist",
     "test": "jest",
     "test:watch": "jest --watch",

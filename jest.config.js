@@ -1,30 +1,31 @@
+/** @type {import('ts-jest').JestConfigWithTsJest} */
 export default {
-  preset: 'ts-jest',
-  testEnvironment: 'node',
-  moduleNameMapper: {
-    '^(\.{1,2}/.*)\\.js$': '$1',
-  },
-  roots: ['<rootDir>/src'],
-  testMatch: [
-    '**/__tests__/**/*.ts',
-    '**/?(*.)+(spec|test).ts',
-  ],
-  testPathIgnorePatterns: [
-    '<rootDir>/src/__tests__/setup.ts',
-    '<rootDir>/src/__tests__/fixtures/',
-  ],
-  transform: {
-    '^.+\\.ts$': 'ts-jest',
-  },
-  transformIgnorePatterns: [
-    '[/\\\\]dist[/\\\\]',
-  ],
-  collectCoverageFrom: [
-    'src/**/*.ts',
-    '!src/**/*.d.ts',
-    '!src/**/*.test.ts',
-    '!src/**/*.spec.ts',
-  ],
-  coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+    preset: 'ts-jest/presets/default-esm',
+    testEnvironment: 'node',
+    extensionsToTreatAsEsm: ['.ts'],
+    moduleNameMapper: {
+        '^(\\.{1,2}/.*)\\.js$': '$1',
+    },
+    transform: {
+        '^.+\\.ts$': [
+            'ts-jest',
+            {
+                useESM: true,
+                tsconfig: {
+                    module: 'ESNext',
+                    moduleResolution: 'node',
+                    esModuleInterop: true,
+                    allowSyntheticDefaultImports: true,
+                },
+            },
+        ],
+    },
+    testMatch: ['**/__tests__/**/*.test.ts'],
+    collectCoverageFrom: [
+        'src/**/*.ts',
+        '!src/**/*.test.ts',
+        '!src/**/__tests__/**',
+    ],
+    coverageDirectory: 'coverage',
+    coverageReporters: ['text', 'lcov', 'html'],
 };

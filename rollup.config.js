@@ -3,40 +3,26 @@ import commonjs from '@rollup/plugin-commonjs';
 import typescript from '@rollup/plugin-typescript';
 
 export default {
-  input: 'src/index.ts',
-  output: [
-    {
-      file: 'dist/browser/index.js',
-      format: 'umd',
-      name: 'NaylenceFactory',
-      sourcemap: true,
-      globals: {
-        // Add any globals needed for browser builds
-      }
+    input: 'src/index.ts',
+    output: {
+        file: 'dist/browser/index.js',
+        format: 'esm',
+        sourcemap: true,
+        name: 'NaylenceFactory',
     },
-    {
-      file: 'dist/browser/index.esm.js',
-      format: 'es',
-      sourcemap: true
-    }
-  ],
-  plugins: [
-    resolve({
-      browser: true,
-      preferBuiltins: false
-    }),
-    commonjs(),
-    typescript({
-      tsconfig: './tsconfig.json',
-      compilerOptions: {
-        module: 'Node16',
-        moduleResolution: 'node16',
-        declaration: false,
-        declarationMap: false,
-        sourceMap: true
-      },
-      outDir: 'dist/browser'
-    })
-  ],
-  external: []
+    plugins: [
+        resolve({
+            browser: true,
+            preferBuiltins: false,
+        }),
+        commonjs(),
+        typescript({
+            tsconfig: './tsconfig.json',
+            declaration: false,
+            declarationMap: false,
+            outDir: 'dist/browser',
+            sourceMap: true,
+        }),
+    ],
+    external: ['zod'],
 };
