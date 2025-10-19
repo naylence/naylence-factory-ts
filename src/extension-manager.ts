@@ -8,7 +8,7 @@ import { ResourceFactory, FactoryConstructor, FactoryInfo } from './factory.js';
  */
 export class ExtensionManager<T = unknown, C = unknown> {
     private readonly group: string;
-    private readonly baseType: string;
+    // private readonly baseType: string;
     private readonly registry = new Map<string, FactoryInfo<T, C>>();
     private readonly instanceCache = new Map<string, ResourceFactory<T, C>>();
 
@@ -18,9 +18,9 @@ export class ExtensionManager<T = unknown, C = unknown> {
         ExtensionManager<any, any>
     >();
 
-    constructor(group: string, baseType: string) {
+    constructor(group: string) { //}, baseType: string) {
         this.group = group;
-        this.baseType = baseType;
+        // this.baseType = baseType;
     }
 
     /**
@@ -178,13 +178,13 @@ export class ExtensionManager<T = unknown, C = unknown> {
         }
 
         const [bestFactory, bestType] = bestEntry;
-        const bestPriority = bestFactory.priority ?? 0;
+        // const bestPriority = bestFactory.priority ?? 0;
 
         // Log selection since multiple candidates exist (defaults.length > 1 is guaranteed here)
-        console.debug(
-            `Selected best default for ${this.baseType}: '${bestType}' ` +
-                `(priority=${bestPriority}) among [${defaults.map(([f, t]) => `${t}(p=${f.priority ?? 0})`).join(', ')}]`
-        );
+        // console.debug(
+        //     `Selected best default for ${this.baseType}: '${bestType}' ` +
+        //         `(priority=${bestPriority}) among [${defaults.map(([f, t]) => `${t}(p=${f.priority ?? 0})`).join(', ')}]`
+        // );
 
         return [bestFactory, bestType];
     }
@@ -238,7 +238,7 @@ export class ExtensionManager<T = unknown, C = unknown> {
 
         let manager = this.globalRegistry.get(key);
         if (!manager) {
-            manager = new ExtensionManager<T, C>(group, baseType);
+            manager = new ExtensionManager<T, C>(group); //, baseType);
             this.globalRegistry.set(key, manager);
         }
 
