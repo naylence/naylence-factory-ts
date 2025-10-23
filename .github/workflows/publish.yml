@@ -13,6 +13,9 @@ permissions:
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
+    
+    env:
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
     steps:
       - name: Check out repository
@@ -48,5 +51,3 @@ jobs:
 
       - name: Publish to npm
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
