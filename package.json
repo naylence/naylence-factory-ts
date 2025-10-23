@@ -1,5 +1,5 @@
 {
-  "name": "naylence-factory",
+  "name": "@naylence/factory",
   "version": "0.1.0",
   "type": "module",
   "description": "Naylence resource factory and extension management framework for TypeScript",
@@ -48,6 +48,10 @@
     "LICENSE",
     "NOTICE"
   ],
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "scripts": {
     "build": "npm run clean && npm run build:types && npm run build:cjs && npm run build:esm && npm run build:browser && npm run fix-source-maps",
     "build:types": "tsc --project tsconfig.json --emitDeclarationOnly --outDir dist/types",

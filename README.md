@@ -19,7 +19,7 @@ It provides a structured way to define, register, and instantiate resources (con
 ## Installation
 
 ```bash
-npm install naylence-factory
+npm install @naylence/factory
 ```
 
 Requires **Node.js 18+** or modern browsers with ES2022 support.
