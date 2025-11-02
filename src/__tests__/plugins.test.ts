@@ -84,7 +84,7 @@ describe('Plugin loading', () => {
         >;
         const error = Object.assign(
             new Error(
-                "Cannot find package 'naylence-runtime' imported from test"
+                "Cannot find package '@naylence/runtime' imported from test"
             ),
             { code: 'ERR_MODULE_NOT_FOUND' }
         );
@@ -98,10 +98,10 @@ describe('Plugin loading', () => {
             async () => 'file:///resolved/plugin.mjs'
         );
 
-        await loadPluginsFromSpecs([{ name: 'naylence-runtime/plugin' }]);
+    await loadPluginsFromSpecs([{ name: '@naylence/runtime/plugin' }]);
 
         expect(importer).toHaveBeenCalledTimes(2);
-        expect(importer).toHaveBeenNthCalledWith(1, 'naylence-runtime/plugin');
+    expect(importer).toHaveBeenNthCalledWith(1, '@naylence/runtime/plugin');
         expect(importer).toHaveBeenNthCalledWith(
             2,
             'file:///resolved/plugin.mjs'
@@ -127,11 +127,11 @@ describe('Plugin loading', () => {
         pluginsInternal.setDynamicImporter(importer);
         pluginsInternal.setResolveFromCwd(async () => null);
 
-        await loadPluginsFromSpecs([{ name: 'naylence-runtime' }]);
+        await loadPluginsFromSpecs([{ name: '@naylence/runtime' }]);
 
         expect(importer).toHaveBeenCalledTimes(2);
-        expect(importer).toHaveBeenNthCalledWith(1, 'naylence-runtime/plugin');
-        expect(importer).toHaveBeenNthCalledWith(2, 'naylence-runtime');
+    expect(importer).toHaveBeenNthCalledWith(1, '@naylence/runtime/plugin');
+        expect(importer).toHaveBeenNthCalledWith(2, '@naylence/runtime');
         expect(register).toHaveBeenCalledTimes(1);
     });
 });

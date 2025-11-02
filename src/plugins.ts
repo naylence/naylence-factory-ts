@@ -28,9 +28,31 @@ export interface PluginSpec {
     export?: string;
 }
 
+function getGlobalDynamicImporter(): DynamicImporter | null {
+    try {
+        const candidate = globalThis as {
+            __naylenceFactoryDynamicImporter?: unknown;
+        };
+
+        const override = candidate?.__naylenceFactoryDynamicImporter;
+        if (typeof override === 'function') {
+            return override as DynamicImporter;
+        }
+    } catch {
+        // Ignore access errors (e.g., globalThis not defined)
+    }
+
+    return null;
+}
+
 function getDynamicImporter(): DynamicImporter {
     if (customDynamicImporter) {
         return customDynamicImporter;
+    }
+
+    const globalImporter = getGlobalDynamicImporter();
+    if (globalImporter) {
+        return globalImporter;
     }
 
     return (specifier: string) =>
