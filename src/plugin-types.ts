@@ -1,5 +1,6 @@
 export interface FamePlugin {
     name: string;
+    version?: string;
     register(): Promise<void> | void;
 }
 
