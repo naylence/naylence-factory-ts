@@ -27,6 +27,18 @@ export class ExpressionNotAllowedError extends Error {
 }
 
 /**
+ * Error thrown when expression evaluation exceeds the maximum depth
+ */
+export class ExpressionRecursionError extends Error {
+    constructor(expression: string) {
+        super(
+            `Expression evaluation exceeded the maximum recursion depth: ${expression}`
+        );
+        this.name = 'ExpressionRecursionError';
+    }
+}
+
+/**
  * Pure expression evaluator with no external dependencies.
  *
  * Supports expressions like:
@@ -36,16 +48,13 @@ export class ExpressionNotAllowedError extends Error {
  * Can handle both full-string expressions and partial substitutions within strings.
  */
 export class ExpressionEvaluator {
+    private static readonly MAX_EVALUATION_DEPTH = 10;
+
     /** Regex pattern for environment variable expressions */
-    private static readonly ENV_PATTERN = /\$\{env:([^:}]+)(?::([^}]*))?\}/g;
+    private static readonly EXPRESSION_START = '${';
 
-    /** Regex pattern for configuration expressions */
-    private static readonly CONFIG_PATTERN =
-        /\$\{config:([^:}]+)(?::([^}]*))?\}/g;
-
-    /** Combined pattern for any expression */
-    private static readonly ANY_EXPRESSION_PATTERN =
-        /\$\{(?:env|config):([^:}]+)(?::([^}]*))?\}/;
+    /** Combined pattern for any expression start */
+    private static readonly ANY_EXPRESSION_PATTERN = /\$\{(?:env|config):/;
 
     /**
      * Check if a value contains any expressions that can be evaluated.
@@ -55,7 +64,11 @@ export class ExpressionEvaluator {
             return false;
         }
 
-        return this.ANY_EXPRESSION_PATTERN.test(value);
+        if (!this.ANY_EXPRESSION_PATTERN.test(value)) {
+            return false;
+        }
+
+        return this.findNextExpression(value, 0) !== null;
     }
 
     /**
@@ -92,7 +105,7 @@ export class ExpressionEvaluator {
         }
 
         // Evaluate the string
-        const evaluated = this.evaluateString(value, context);
+        const evaluated = this.evaluateString(value, context, 0);
 
         // Convert to target type if specified
         if (targetType) {
@@ -107,33 +120,37 @@ export class ExpressionEvaluator {
      */
     private static evaluateString(
         value: string,
-        context: ExpressionContext
+        context: ExpressionContext,
+        depth: number
     ): string {
-        let result = value;
+        if (depth > this.MAX_EVALUATION_DEPTH) {
+            throw new ExpressionRecursionError(value);
+        }
 
-        // Substitute environment variable expressions
-        result = result.replace(
-            this.ENV_PATTERN,
-            (_match, varName: string, defaultValue?: string) => {
-                return this.resolveEnvironmentVariable(
-                    varName,
-                    defaultValue,
-                    context
-                );
-            }
-        );
+        let result = '';
+        let index = 0;
 
-        // Substitute configuration expressions
-        result = result.replace(
-            this.CONFIG_PATTERN,
-            (_match, key: string, defaultValue?: string) => {
-                return this.resolveConfigurationValue(
-                    key,
-                    defaultValue,
-                    context
-                );
+        while (index < value.length) {
+            const next = this.findNextExpression(value, index);
+            if (!next) {
+                result += value.slice(index);
+                break;
             }
-        );
+
+            if (next.start > index) {
+                result += value.slice(index, next.start);
+            }
+
+            const evaluated = this.evaluateExpression(
+                next.type,
+                next.key,
+                next.defaultValue,
+                context,
+                depth
+            );
+            result += evaluated;
+            index = next.end + 1;
+        }
 
         return result;
     }
@@ -144,7 +161,8 @@ export class ExpressionEvaluator {
     private static resolveEnvironmentVariable(
         varName: string,
         defaultValue: string | undefined,
-        context: ExpressionContext
+        context: ExpressionContext,
+        depth: number
     ): string {
         // Check context environment first, then global process.env (Node.js)
         let envValue: string | undefined;
@@ -164,7 +182,7 @@ export class ExpressionEvaluator {
         if (envValue !== undefined) {
             return envValue;
         } else if (defaultValue !== undefined) {
-            return defaultValue;
+            return this.evaluateDefault(defaultValue, context, depth);
         } else {
             throw new MissingEnvironmentVariableError(varName);
         }
@@ -176,14 +194,15 @@ export class ExpressionEvaluator {
     private static resolveConfigurationValue(
         key: string,
         defaultValue: string | undefined,
-        context: ExpressionContext
+        context: ExpressionContext,
+        depth: number
     ): string {
         const configValue = this.getNestedValue(context.config ?? {}, key);
 
         if (configValue !== undefined) {
             return String(configValue);
         } else if (defaultValue !== undefined) {
-            return defaultValue;
+            return this.evaluateDefault(defaultValue, context, depth);
         } else {
             throw new Error(
                 `Configuration key '${key}' is required but not defined`
@@ -236,5 +255,139 @@ export class ExpressionEvaluator {
         } catch {
             return value; // Return original if conversion fails
         }
+    }
+
+    private static evaluateExpression(
+        type: 'env' | 'config',
+        key: string,
+        defaultValue: string | undefined,
+        context: ExpressionContext,
+        depth: number
+    ): string {
+        if (type === 'env') {
+            return this.resolveEnvironmentVariable(
+                key,
+                defaultValue,
+                context,
+                depth
+            );
+        }
+
+        return this.resolveConfigurationValue(
+            key,
+            defaultValue,
+            context,
+            depth
+        );
+    }
+
+    private static evaluateDefault(
+        defaultValue: string,
+        context: ExpressionContext,
+        depth: number
+    ): string {
+        if (!this.ANY_EXPRESSION_PATTERN.test(defaultValue)) {
+            return defaultValue;
+        }
+
+        return this.evaluateString(defaultValue, context, depth + 1);
+    }
+
+    private static findNextExpression(
+        value: string,
+        fromIndex: number
+    ): {
+        start: number;
+        end: number;
+        type: 'env' | 'config';
+        key: string;
+        defaultValue?: string;
+    } | null {
+        let searchIndex = fromIndex;
+
+        while (searchIndex < value.length) {
+            const start = value.indexOf(this.EXPRESSION_START, searchIndex);
+            if (start === -1) {
+                return null;
+            }
+
+            const typeStart = start + this.EXPRESSION_START.length;
+            const typeSeparator = value.indexOf(':', typeStart);
+            if (typeSeparator === -1) {
+                searchIndex = start + this.EXPRESSION_START.length;
+                continue;
+            }
+
+            const type = value.slice(typeStart, typeSeparator);
+            if (type !== 'env' && type !== 'config') {
+                searchIndex = start + this.EXPRESSION_START.length;
+                continue;
+            }
+
+            let index = typeSeparator + 1;
+            const keyStart = index;
+            while (index < value.length) {
+                const char = value[index];
+                if (char === ':' || char === '}') {
+                    break;
+                }
+                index += 1;
+            }
+
+            if (index >= value.length) {
+                return null;
+            }
+
+            const key = value.slice(keyStart, index);
+            if (!key) {
+                searchIndex = start + this.EXPRESSION_START.length;
+                continue;
+            }
+
+            if (value[index] === '}') {
+                return {
+                    start,
+                    end: index,
+                    type,
+                    key,
+                };
+            }
+
+            const defaultStart = index + 1;
+            let level = 1;
+            index = defaultStart;
+
+            while (index < value.length) {
+                const char = value[index];
+                const nextChar =
+                    index + 1 < value.length ? value[index + 1] : '';
+
+                if (char === '$' && nextChar === '{') {
+                    level += 1;
+                    index += 2;
+                    continue;
+                }
+
+                if (char === '}') {
+                    level -= 1;
+                    if (level === 0) {
+                        const defaultValue = value.slice(defaultStart, index);
+                        return {
+                            start,
+                            end: index,
+                            type,
+                            key,
+                            defaultValue,
+                        };
+                    }
+                }
+
+                index += 1;
+            }
+
+            return null;
+        }
+
+        return null;
     }
 }

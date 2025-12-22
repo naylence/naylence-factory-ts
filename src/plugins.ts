@@ -15,6 +15,7 @@ const isNodeEnvironment =
 
 type NodeRequireLike = { resolve: (specifier: string) => string };
 type DynamicImporter = (specifier: string) => Promise<Record<string, unknown>>;
+type RuntimeImporter = (specifier: string) => Promise<unknown>;
 
 let customDynamicImporter: DynamicImporter | null = null;
 let customResolveFromCwd:
@@ -22,6 +23,11 @@ let customResolveFromCwd:
     | null = null;
 let cachedNodeRequire: NodeRequireLike | null = null;
 let cachedPathToFileURL: ((path: string) => URL) | null = null;
+let cachedRuntimeImporter: RuntimeImporter | null = null;
+
+const NODE_MODULE_SPECIFIER = 'module';
+const NODE_URL_SPECIFIER = 'url';
+const NODE_FS_PROMISES_SPECIFIER = 'fs/promises';
 
 export interface PluginSpec {
     name: string;
@@ -57,6 +63,28 @@ function getDynamicImporter(): DynamicImporter {
 
     return (specifier: string) =>
         import(specifier) as Promise<Record<string, unknown>>;
+}
+
+function getRuntimeImporter(): RuntimeImporter {
+    if (!cachedRuntimeImporter) {
+        // Lazily create a dynamic importer so bundlers do not eagerly resolve
+        // optional Node.js built-ins when compiling for the browser.
+        cachedRuntimeImporter = new Function(
+            'specifier',
+            'return import(specifier);'
+        ) as RuntimeImporter;
+    }
+
+    return cachedRuntimeImporter;
+}
+
+async function importNodeModule<T>(specifier: string): Promise<T> {
+    const importer = getRuntimeImporter();
+    const target = specifier.startsWith('node:')
+        ? specifier
+        : `node:${specifier}`;
+
+    return (await importer(target)) as T;
 }
 
 function shouldAttemptNodeFallback(error: unknown): boolean {
@@ -129,12 +157,12 @@ async function resolveFromProcessCwd(
     if (!cachedNodeRequire) {
         try {
             const [{ createRequire }, urlModule] = await Promise.all([
-                import('node:module') as Promise<{
+                importNodeModule<{
                     createRequire: (filename: string | URL) => NodeRequireLike;
-                }>,
-                import('node:url') as Promise<{
+                }>(NODE_MODULE_SPECIFIER),
+                importNodeModule<{
                     pathToFileURL: (path: string) => URL;
-                }>,
+                }>(NODE_URL_SPECIFIER),
             ]);
 
             cachedPathToFileURL = urlModule.pathToFileURL;
@@ -162,9 +190,9 @@ async function resolveFromProcessCwd(
     try {
         const resolved = cachedNodeRequire.resolve(specifier);
         if (!cachedPathToFileURL) {
-            const { pathToFileURL } = (await import('node:url')) as {
+            const { pathToFileURL } = await importNodeModule<{
                 pathToFileURL: (path: string) => URL;
-            };
+            }>(NODE_URL_SPECIFIER);
             cachedPathToFileURL = pathToFileURL;
         }
 
@@ -175,9 +203,9 @@ async function resolveFromProcessCwd(
                 'dist/esm/'
             );
             try {
-                const { access } = (await import('node:fs/promises')) as {
+                const { access } = await importNodeModule<{
                     access: (path: string) => Promise<void>;
-                };
+                }>(NODE_FS_PROMISES_SPECIFIER);
                 await access(esmPath);
                 candidatePath = esmPath;
             } catch {
@@ -369,5 +397,6 @@ export const _internal = {
         customResolveFromCwd = null;
         cachedNodeRequire = null;
         cachedPathToFileURL = null;
+        cachedRuntimeImporter = null;
     },
 };

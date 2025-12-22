@@ -120,6 +120,29 @@ describe('ExpressionEvaluator', () => {
             ).toBe(''); // empty default
         });
 
+        it('should evaluate nested defaults for environment variables', () => {
+            const context = {
+                policy: ExpressionEvaluationPolicy.EVALUATE,
+                env: {
+                    FALLBACK: 'from_fallback',
+                },
+            };
+
+            expect(
+                ExpressionEvaluator.evaluate(
+                    '${env:PRIMARY:${env:FALLBACK:default_value}}',
+                    context
+                )
+            ).toBe('from_fallback');
+
+            expect(
+                ExpressionEvaluator.evaluate(
+                    '${env:PRIMARY:${env:SECONDARY:default_value}}',
+                    { policy: ExpressionEvaluationPolicy.EVALUATE, env: {} }
+                )
+            ).toBe('default_value');
+        });
+
         it('should throw error when env var not found and no default', () => {
             const context = {
                 policy: ExpressionEvaluationPolicy.EVALUATE,
@@ -220,6 +243,43 @@ describe('ExpressionEvaluator', () => {
                 ExpressionEvaluator.evaluate('${env:TEST_VAR}', context)
             ).toBe('from_context');
         });
+
+        it('should treat explicitly undefined env values as missing and use defaults', () => {
+            const env = Object.create(null) as Record<string, string>;
+            (env as any).OPTIONAL_VAR = undefined;
+
+            const context = {
+                policy: ExpressionEvaluationPolicy.EVALUATE,
+                env,
+            };
+
+            expect(
+                ExpressionEvaluator.evaluate(
+                    '${env:OPTIONAL_VAR:fallback}',
+                    context
+                )
+            ).toBe('fallback');
+        });
+
+        it('should fall back to defaults when process.env has undefined entries', () => {
+            (globalThis as any).process = {
+                env: {
+                    OPTIONAL_VAR: undefined,
+                },
+            };
+
+            const context = {
+                policy: ExpressionEvaluationPolicy.EVALUATE,
+                env: {},
+            };
+
+            expect(
+                ExpressionEvaluator.evaluate(
+                    '${env:OPTIONAL_VAR:via_default}',
+                    context
+                )
+            ).toBe('via_default');
+        });
     });
 
     describe('type conversion', () => {
@@ -319,6 +379,23 @@ describe('ExpressionEvaluator', () => {
                     'number'
                 )
             ).toBe('not-a-number'); // keeps as string
+        });
+
+        it('should leave value untouched when target type is string', () => {
+            const context = {
+                policy: ExpressionEvaluationPolicy.EVALUATE,
+                env: {
+                    RAW_VALUE: 'raw-string',
+                },
+            };
+
+            expect(
+                ExpressionEvaluator.evaluate(
+                    '${env:RAW_VALUE}',
+                    context,
+                    'string'
+                )
+            ).toBe('raw-string');
         });
     });
 

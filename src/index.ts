@@ -43,6 +43,7 @@ export {
     ExpressionEvaluator,
     MissingEnvironmentVariableError,
     ExpressionNotAllowedError,
+    ExpressionRecursionError,
 } from './expression-evaluator.js';
 
 // Expression utilities
