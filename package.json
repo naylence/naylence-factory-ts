@@ -1,6 +1,6 @@
 {
   "name": "@naylence/factory",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "type": "module",
   "description": "Naylence resource factory and extension management framework for TypeScript",
   "author": "Naylence Dev <naylencedev@gmail.com>",

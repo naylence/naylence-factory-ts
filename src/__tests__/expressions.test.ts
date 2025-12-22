@@ -13,6 +13,10 @@ describe('Expressions', () => {
                 '${env:HOST:localhost}'
             );
             expect(Expressions.env('DEBUG', '')).toBe('${env:DEBUG:}'); // empty default
+            expect(Expressions.env('RETRIES', 3)).toBe('${env:RETRIES:3}');
+            expect(Expressions.env('ENABLED', false)).toBe(
+                '${env:ENABLED:false}'
+            );
         });
 
         it('should work with function syntax', () => {

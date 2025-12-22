@@ -32,11 +32,11 @@ export class Expressions {
      * Expressions.env("PORT", "8080") // -> "${env:PORT:8080}"
      * ```
      */
-    public static env(varName: string, defaultValue?: string): string {
+    public static env(varName: string, defaultValue?: unknown): string {
         if (defaultValue === undefined) {
             return `\${env:${varName}}`;
         } else {
-            return `\${env:${varName}:${defaultValue}}`;
+            return `\${env:${varName}:${String(defaultValue)}}`;
         }
     }
 
@@ -85,7 +85,7 @@ export class Expressions {
 }
 
 // Backward compatibility - keep the function-based API available
-export function env(varName: string, defaultValue?: string): string {
+export function env(varName: string, defaultValue?: unknown): string {
     return Expressions.env(varName, defaultValue);
 }
 
